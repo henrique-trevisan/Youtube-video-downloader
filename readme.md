@@ -17,7 +17,7 @@ This repository contains a simple GUI application for downloading YouTube videos
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/yourusername/youtube-video-downloader.git
+    git clone https://github.com/henrique-trevisan/youtube-video-downloader.git
     cd youtube-video-downloader
     ```
 
