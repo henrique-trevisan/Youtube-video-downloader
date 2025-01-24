@@ -17,11 +17,28 @@ class App(ctk.CTk):
         self.workers = [threading.Thread(target=self.worker).start() for _ in range(os.cpu_count()-threading.active_count())]
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure([1, 2], weight=0)
+
+        # Create a second frame for the save path
+        self.Save_Frame = ctk.CTkFrame(self, corner_radius=0)
+        self.Save_Frame.grid(row=1, column=0, sticky="nwe")
+        self.Save_Frame.grid_columnconfigure(0, weight=0)
+        self.Save_Frame.grid_columnconfigure(1, weight=2)
+        self.Save_Frame.grid_columnconfigure(2, weight=0)
+
+        # Add label, entry, and button to the Save_Frame
+        self.Save_Label = ctk.CTkLabel(self.Save_Frame, text="Save to: ")
+        self.Save_Label.grid(row=0, column=0, padx=[20, 5], pady=20, sticky="w")
+
+        self.Save_Entry = ctk.CTkEntry(self.Save_Frame, placeholder_text="File path")
+        self.Save_Entry.grid(row=0, column=1, padx=[0, 5], pady=20, sticky="ew")
+
+        self.Save_Button = ctk.CTkButton(self.Save_Frame, text="Change")
+        self.Save_Button.grid(row=0, column=2, padx=[0, 20], pady=20, sticky="e")
 
         # Create a frame for the URL
-        self.URL_Frame = ctk.CTkFrame(self)
-        self.URL_Frame.grid(row=1, column=0, sticky="nwe")
+        self.URL_Frame = ctk.CTkFrame(self, corner_radius=0)
+        self.URL_Frame.grid(row=2, column=0, sticky="nwe")
         self.URL_Frame.grid_columnconfigure(0, weight=2)
         self.URL_Frame.grid_columnconfigure([1, 2], weight=0)
 

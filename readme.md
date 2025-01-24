@@ -23,7 +23,11 @@ This repository contains a simple GUI application for downloading YouTube videos
 
 2. Install the required libraries:
     ```bash
-    pip install customtkinter
+    pip install customtkinter pytube3
+    ```
+    or
+    ```bash
+    pip install -r requirements.txt
     ```
 
 ## Usage
