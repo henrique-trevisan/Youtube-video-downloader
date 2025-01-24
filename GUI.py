@@ -6,7 +6,7 @@ import yt_dlp
 class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, title, values, variable):
         super().__init__(master, label_text=title)
-        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure([0, 1, 2, 3, 4], weight=1)
         self.values = values
         self.radiobuttons = []
         self.variable = variable
@@ -132,6 +132,7 @@ class App(ctk.CTk):
     def search_video(self) -> None:
         url = self.URL.get()
         if not url:
+            self.show_error_message("Invalid URL. Please try again.")
             return
         try:
             ydl_opts = {
@@ -143,7 +144,7 @@ class App(ctk.CTk):
                 info = ydl.extract_info(url, download=False)
                 self.display_streams(info)
         except Exception as e:
-            print(f"Error: {e}")
+            self.show_error_message("Video not found. Please check the URL and try again.")
 
     def display_streams(self, info: dict) -> None:
         formats = info.get('formats', [])
@@ -151,6 +152,27 @@ class App(ctk.CTk):
 
         scrollable_frame = MyScrollableRadioButtonFrame(self, title="Available Streams", values=format_values, variable=self.selected_format)
         scrollable_frame.grid(row=3, column=0, padx=10, pady=(10, 0), sticky="nsew")
+
+        # Create a frame for downloads below the streams
+        self.download_frame = ctk.CTkFrame(self, corner_radius=0)
+        self.download_frame.grid(row=4, column=0, padx=10, pady=(10, 0), sticky="nsew")
+        self.download_frame.grid_columnconfigure(0, weight=1)
+
+        # Add download button
+        self.download_button = ctk.CTkButton(
+            self.download_frame, text="Download", command=self.download_video, state="disabled"
+        )
+        self.download_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+
+    def show_error_message(self, message: str) -> None:
+        error_frame = ctk.CTkFrame(self, corner_radius=0)
+        error_frame.grid(row=3, column=0, padx=10, pady=(10, 0), sticky="nsew")
+
+        error_label = ctk.CTkLabel(error_frame, text=message, text_color="red")
+        error_label.pack(pady=20, padx=20)
+
+    def download_video(self) -> None:
+        print("Download initiated!")
 
 # Main loop
 if __name__ == "__main__":
