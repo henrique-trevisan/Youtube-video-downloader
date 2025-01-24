@@ -49,13 +49,6 @@ class App(ctk.CTk):
         self.checkbox_var = ctk.BooleanVar()
         self.checkbox_var.set(True)  # Default state: checked
 
-        # Place checkboxes
-        #self.chbx_1 = ctk.CTkCheckBox(self.URL_Frame, text="Option 1", variable=self.checkbox_var)  # Default checked
-        #self.chbx_1.grid(row=0, column=0, padx=20, pady=[20, 20], sticky="ew")
-
-        #self.chbx_2 = ctk.CTkCheckBox(self.URL_Frame, text="Option 2")
-        #self.chbx_2.grid(row=1, column=0, padx=20, pady=[20,20], sticky="ew")
-
     # Execute every function call into a thread
     def worker(self) -> None:
         while(self.GUI_oppened):
