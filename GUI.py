@@ -1,13 +1,39 @@
 import customtkinter as ctk
 import threading, queue, os
 from tkinter import filedialog
-from pytube import YouTube
+import yt_dlp
+
+class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
+    def __init__(self, master, title, values, variable):
+        super().__init__(master, label_text=title)
+        self.grid_columnconfigure(0, weight=1)
+        self.values = values
+        self.radiobuttons = []
+        self.variable = variable
+
+        # Add combo boxes for filtering
+        self.audio_video_filter = ctk.CTkComboBox(self, values=["Audio", "Video"])
+        self.audio_video_filter.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+
+        self.format_filter = ctk.CTkComboBox(self, values=["MP4", "MP3", "WEBM", "MKV"])
+        self.format_filter.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+
+        self.audio_quality_filter = ctk.CTkComboBox(self, values=["High", "Medium", "Low"])
+        self.audio_quality_filter.grid(row=0, column=2, padx=10, pady=10, sticky="ew")
+
+        self.video_quality_filter = ctk.CTkComboBox(self, values=["1080p", "720p", "480p", "360p"])
+        self.video_quality_filter.grid(row=0, column=3, padx=10, pady=10, sticky="ew")
+
+        # Add radio buttons for available streams
+        for i, value in enumerate(self.values):
+            radiobutton = ctk.CTkRadioButton(self, text=value, variable=self.variable, value=value)
+            radiobutton.grid(row=i + 1, column=0, columnspan=4, padx=10, pady=(10, 0), sticky="ew")
+            self.radiobuttons.append(radiobutton)
 
 class App(ctk.CTk):
-    
     def __init__(self) -> None:
         super().__init__()
-        #self.geometry("600x225")
+        self.geometry("700x600")
         self.resizable(True, True)
         self.protocol("WM_DELETE_WINDOW", self.on_closing)  # Bind the close event to the on_closing function
         self.GUI_oppened: bool = True  # Indicates if the GUI is oppened
@@ -69,6 +95,9 @@ class App(ctk.CTk):
         self.checkbox_var = ctk.BooleanVar()
         self.checkbox_var.set(True)  # Default state: checked
 
+        # Variable to store selected format
+        self.selected_format = ctk.StringVar()
+
     # Execute every function call into a thread
     def worker(self) -> None:
         while(self.GUI_oppened):
@@ -82,7 +111,7 @@ class App(ctk.CTk):
 
     def on_closing(self) -> None:
         self.GUI_oppened = False
-        app.destroy()  # Close the window
+        self.destroy()  # Close the window
 
     def clear_url_func(self) -> None:
         self.URL.delete(0, "end")  # Clears the content of the entry widget
@@ -105,24 +134,23 @@ class App(ctk.CTk):
         if not url:
             return
         try:
-            yt = YouTube(url)
-            print(yt.title)
-            self.display_streams(yt)
+            ydl_opts = {
+                'quiet': True,
+                'simulate': True,
+                'force_generic_extractor': True,
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                self.display_streams(info)
         except Exception as e:
             print(f"Error: {e}")
 
-    def display_streams(self, yt: YouTube) -> None:
-        # Create a third frame
-        self.Streams_Frame = ctk.CTkFrame(self, corner_radius=0)
-        self.Streams_Frame.grid(row=3, column=0, sticky="nwe")
-        
-        # Create a subframe for each stream
-        for stream in yt.streams:
-            stream_frame = ctk.CTkFrame(self.Streams_Frame, corner_radius=0)
-            stream_frame.pack(fill="x", pady=5, padx=20)
+    def display_streams(self, info: dict) -> None:
+        formats = info.get('formats', [])
+        format_values = [f"{fmt.get('format_id')} - {fmt.get('ext')} - {fmt.get('resolution', 'audio only')}" for fmt in formats]
 
-            stream_label = ctk.CTkLabel(stream_frame, text=str(stream), anchor="w")
-            stream_label.pack(side="left", fill="x", expand=True)
+        scrollable_frame = MyScrollableRadioButtonFrame(self, title="Available Streams", values=format_values, variable=self.selected_format)
+        scrollable_frame.grid(row=3, column=0, padx=10, pady=(10, 0), sticky="nsew")
 
 # Main loop
 if __name__ == "__main__":
