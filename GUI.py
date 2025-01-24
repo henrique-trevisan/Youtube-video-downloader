@@ -1,5 +1,7 @@
 import customtkinter as ctk
 import threading, queue, os
+from tkinter import filedialog
+from pytube import YouTube
 
 class App(ctk.CTk):
     
@@ -33,7 +35,8 @@ class App(ctk.CTk):
         self.Save_Entry = ctk.CTkEntry(self.Save_Frame, placeholder_text="File path")
         self.Save_Entry.grid(row=0, column=1, padx=[0, 5], pady=20, sticky="ew")
 
-        self.Save_Button = ctk.CTkButton(self.Save_Frame, text="Change")
+        change_button_text = "Change"
+        self.Save_Button = ctk.CTkButton(self.Save_Frame, text=change_button_text, command=self.change_save_path, width=len(change_button_text)+4)
         self.Save_Button.grid(row=0, column=2, padx=[0, 20], pady=20, sticky="e")
 
         # Create a frame for the URL
@@ -59,7 +62,7 @@ class App(ctk.CTk):
         self.clear_URL_button = ctk.CTkButton(self.URL_Frame, text=clear_URL_button_text, command=lambda: self.on_button_click(self.clear_url_func,), width=len(clear_URL_button_text)+4)
         self.clear_URL_button.grid(row=1, column=2, padx=[0,20], pady=20, sticky="w")
 
-        self.search_button = ctk.CTkButton(self.URL_Frame, text="Search video")
+        self.search_button = ctk.CTkButton(self.URL_Frame, text="Search video", command=self.search_video)
         self.search_button.grid(row=2, column=0, padx=20, pady=[0, 20], columnspan=3)
 
         # Create a BooleanVar to bind to the checkbox
@@ -90,6 +93,36 @@ class App(ctk.CTk):
 
     def on_button_click(self, func, *args) -> None:
         self.task_queue.put((func, args))  # Wrap the function and its arguments in a tuple
+
+    def change_save_path(self) -> None:
+        folder_selected = filedialog.askdirectory()  # Open file explorer to select folder
+        if folder_selected:
+            self.Save_Entry.delete(0, "end")  # Clear current text in entry
+            self.Save_Entry.insert(0, folder_selected)  # Insert selected folder path
+
+    def search_video(self) -> None:
+        url = self.URL.get()
+        if not url:
+            return
+        try:
+            yt = YouTube(url)
+            print(yt.title)
+            self.display_streams(yt)
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def display_streams(self, yt: YouTube) -> None:
+        # Create a third frame
+        self.Streams_Frame = ctk.CTkFrame(self, corner_radius=0)
+        self.Streams_Frame.grid(row=3, column=0, sticky="nwe")
+        
+        # Create a subframe for each stream
+        for stream in yt.streams:
+            stream_frame = ctk.CTkFrame(self.Streams_Frame, corner_radius=0)
+            stream_frame.pack(fill="x", pady=5, padx=20)
+
+            stream_label = ctk.CTkLabel(stream_frame, text=str(stream), anchor="w")
+            stream_label.pack(side="left", fill="x", expand=True)
 
 # Main loop
 if __name__ == "__main__":
