@@ -18,8 +18,12 @@ class App(ctk.CTk):
         self.worker.start()
 
         self.selected_format = ctk.StringVar()
+        self.selected_format.set(True)
         self.checkbox_var = ctk.BooleanVar()
         self.checkbox_var.set(True)
+
+        self.selected_format = ctk.StringVar()
+        self.selected_format.trace_add("write", self.update_download_button)
 
         self.init_gui()
 
@@ -95,6 +99,27 @@ class App(ctk.CTk):
             self, title="Available Streams", values=format_values, variable=self.selected_format
         )
         stream_frame.grid(row=3, column=0, padx=10, pady=(10, 0), sticky="nsew")
+
+        self.download_button = ctk.CTkButton(
+            self, text="Download", command=self.download_video, state="disabled"
+        )
+        self.download_button.grid(row=4, column=0, padx=10, pady=10, sticky="ew")
+
+    def update_download_button(self, *args):
+        if self.selected_format.get():
+            self.download_button.configure(state="normal")
+        else:
+            self.download_button.configure(state="disabled")
+
+    def download_video(self):
+        selected_stream = self.selected_format.get()
+        save_path = self.Save_Entry.get()
+        if not selected_stream or not save_path:
+            self.show_error_message("Please select a stream and save path before downloading.")
+            return
+        
+        info = Downloader.search_video(self.URL_Entry.get())
+        self.task_queue.put((Downloader.download_video, (info, selected_stream, save_path)))
 
     def show_error_message(self, message):
         error_label = ctk.CTkLabel(self, text=message, text_color="red")
