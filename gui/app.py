@@ -103,7 +103,7 @@ class App(ctk.CTk):
         stream_frame.grid(row=3, column=0, padx=10, pady=(10, 0), sticky="nsew")
 
         self.download_button = ctk.CTkButton(
-            self, text="Download", command=self.download_video, state="disabled"
+            self, text="Download", command=lambda:self.task_queue.put((self.download_video, ())), state="disabled"
         )
         self.download_button.grid(row=5, column=0, padx=10, pady=10, sticky="ew")
 
@@ -121,6 +121,7 @@ class App(ctk.CTk):
             return
         
         info = Downloader.search_video(self.URL_Entry.get())
+        self.show_message("Downloading video...", "green")
         self.task_queue.put((Downloader.download_video, (info, selected_stream, save_path)))
 
     def show_message(self, message, color = "white"):
