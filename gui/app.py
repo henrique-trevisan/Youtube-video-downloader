@@ -1,21 +1,20 @@
 import customtkinter as ctk
-from tkinter import filedialog
 from gui.components import MyScrollableRadioButtonFrame
 from backend.downloader import Downloader
+from backend.worker import Worker
 from utils.helpers import change_save_path
-import threading, queue
+import queue
 
 class App(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
-        self.geometry("700x600")
+        self.geometry("700x610")
         self.resizable(True, True)
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.GUI_oppened = True
 
         self.task_queue = queue.Queue()
-        self.worker = threading.Thread(target=self.worker_thread, daemon=True)
-        self.worker.start()
+        self.worker = Worker(self.task_queue, self.GUI_oppened)
 
         self.selected_format = ctk.StringVar()
         self.selected_format.set(True)
@@ -25,9 +24,10 @@ class App(ctk.CTk):
         self.selected_format = ctk.StringVar()
         self.selected_format.trace_add("write", self.update_download_button)
 
+        self.message_label = None  # Placeholder for messages
         self.init_gui()
 
-    def init_gui(self):
+    def init_gui(self) -> None:
         # Configure grid
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure([1, 2], weight=0)
@@ -74,19 +74,21 @@ class App(ctk.CTk):
         )
         self.Clear_URL_Button.grid(row=1, column=2, padx=[0, 20], pady=20, sticky="w")
 
-        self.Search_Button = ctk.CTkButton(self.URL_Frame, text="Search Video", command=self.search_video)
+        self.Search_Button = ctk.CTkButton(self.URL_Frame, text="Search Video", command=lambda: self.task_queue.put((self.search_video, ())))
         self.Search_Button.grid(row=2, column=0, padx=20, pady=[0, 20], columnspan=3)
 
     def search_video(self):
+        self.show_message("Searching for video...")
         url = self.URL_Entry.get()
         if not url:
-            self.show_error_message("Invalid URL. Please try again.")
+            self.show_message("Invalid URL. Please try again.", "red")
             return
         try:
             info = Downloader.search_video(url)
             self.display_streams(info)
+            self.show_message("Video found. Select a stream to download.")
         except Exception as e:
-            self.show_error_message("Video not found. Please check the URL and try again.")
+            self.show_message("Video not found. Please check the URL and try again.")
 
     def display_streams(self, info):
         formats = info.get("formats", [])
@@ -103,7 +105,7 @@ class App(ctk.CTk):
         self.download_button = ctk.CTkButton(
             self, text="Download", command=self.download_video, state="disabled"
         )
-        self.download_button.grid(row=4, column=0, padx=10, pady=10, sticky="ew")
+        self.download_button.grid(row=5, column=0, padx=10, pady=10, sticky="ew")
 
     def update_download_button(self, *args):
         if self.selected_format.get():
@@ -115,25 +117,19 @@ class App(ctk.CTk):
         selected_stream = self.selected_format.get()
         save_path = self.Save_Entry.get()
         if not selected_stream or not save_path:
-            self.show_error_message("Please select a stream and save path before downloading.")
+            self.show_message("Please select a stream and save path before downloading.")
             return
         
         info = Downloader.search_video(self.URL_Entry.get())
         self.task_queue.put((Downloader.download_video, (info, selected_stream, save_path)))
 
-    def show_error_message(self, message):
-        error_label = ctk.CTkLabel(self, text=message, text_color="red")
-        error_label.grid(row=4, column=0, padx=20, pady=10, sticky="nsew")
+    def show_message(self, message, color = "white"):
+        if self.message_label:
+            self.message_label.destroy()
+        self.message_label = ctk.CTkLabel(self, text=message, text_color=color)
+        self.message_label.grid(row=4, column=0, padx=20, pady=10, sticky="nsew")
 
     def on_closing(self):
         self.GUI_oppened = False
+        self.worker.stop_workers(self.GUI_oppened)  # Ensure worker threads exit
         self.destroy()
-
-    def worker_thread(self):
-        while self.GUI_oppened:
-            try:
-                func, args = self.task_queue.get(timeout=1)
-                func(*args)
-                self.task_queue.task_done()
-            except queue.Empty:
-                pass
