@@ -1,31 +1,29 @@
 # YouTube Video Downloader
 
-This repository contains a simple GUI application for downloading YouTube videos. The application is built using Python and the `customtkinter` library for the graphical user interface.
+This project is a Python-based application that allows users to download videos from YouTube.
 
 ## Features
 
-- Simple and intuitive GUI for downloading YouTube videos.
-- Multi-threaded to ensure the GUI remains responsive during downloads.
-- Options to select video quality and format.
+- Download videos in various resolutions
+- Download audio-only files
+- Simple and easy-to-use interface
 
 ## Requirements
 
 - Python 3.x
-- `customtkinter` library
+- 'yt_dlp' library
 
 ## Installation
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/henrique-trevisan/youtube-video-downloader.git
+    git clone https://github.com/henrique-trevisan/Youtube-video-downloader.git
+    ```
+2. Navigate to the project directory:
+    ```bash
     cd youtube-video-downloader
     ```
-
-2. Install the required libraries:
-    ```bash
-    pip install customtkinter pytube3
-    ```
-    or
+3. Install the required dependencies:
     ```bash
     pip install -r requirements.txt
     ```
@@ -34,15 +32,18 @@ This repository contains a simple GUI application for downloading YouTube videos
 
 1. Run the application:
     ```bash
-    python GUI.py
+    python downloader.py
     ```
-
-2. Use the GUI to enter the URL of the YouTube video you want to download and select the desired options.
+2. Follow the on-screen instructions to download your desired video.
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
+Contributions are welcome! Please fork the repository and submit a pull request.
 
-## Acknowledgements
+## License
 
-- [customtkinter](https://github.com/TomSchimansky/CustomTkinter) for the GUI framework.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Contact
+
+For any questions or suggestions, please contact [your email].
