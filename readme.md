@@ -1,17 +1,17 @@
 # YouTube Video Downloader
 
-This project is a Python-based application that allows users to download videos from YouTube.
+This project is a simple YouTube video downloader built with Python. It allows users to download videos from YouTube by providing the video URL.
 
 ## Features
 
-- Download videos in various resolutions
-- Download audio-only files
-- Simple and easy-to-use interface
+- Download videos from YouTube
+- Choose video resolution
+- Simple and easy to use
 
 ## Requirements
 
 - Python 3.x
-- 'yt_dlp' library
+- `pytube` library
 
 ## Installation
 
@@ -30,20 +30,18 @@ This project is a Python-based application that allows users to download videos 
 
 ## Usage
 
-1. Run the application:
-    ```bash
-    python downloader.py
+1. Run the script:
+    ```sh
+    python main.py
     ```
-2. Follow the on-screen instructions to download your desired video.
+2. Enter the URL of the YouTube video you want to download.
+3. Choose the desired resolution.
+4. The video will be downloaded to the current directory.
 
 ## Contributing
 
-Contributions are welcome! Please fork the repository and submit a pull request.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+Contributions are welcome! Please open an issue or submit a pull request for any changes.
 
 ## Contact
 
-For any questions or suggestions, please contact [your email].
+For any questions or suggestions, please contact trehen30@gmail.com.
