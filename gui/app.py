@@ -10,6 +10,7 @@ from gui.components import (
     MyScrollableRadioButtonFrame,
     MyYouTubeDownloaderApp,
 )
+from utils.helpers import save_last_save_path
 
 
 class App(ctk.CTk):
@@ -128,4 +129,5 @@ class App(ctk.CTk):
         """Handle the window close event."""
         self.gui_opened = False
         self.worker.stop_workers(self.gui_opened)
+        save_last_save_path(self.Save_Entry.get())
         self.destroy()
