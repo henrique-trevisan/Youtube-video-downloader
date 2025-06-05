@@ -35,12 +35,32 @@ class Downloader:
             return ydl.extract_info(url, download=False)
 
     @staticmethod
-    def download_video(info: dict, format_id: str, save_path: str) -> None:
+    def download_video(
+        info: dict,
+        format_id: str,
+        save_path: str,
+        progress_callback=None,
+        finished_callback=None,
+    ) -> None:
         """Download the selected format to the given path."""
+
+        def _hook(d):
+            if d.get("status") == "downloading":
+                total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+                downloaded = d.get("downloaded_bytes", 0)
+                if progress_callback and total:
+                    progress_callback(downloaded / total)
+            elif d.get("status") == "finished":
+                if progress_callback:
+                    progress_callback(1.0)
+                if finished_callback:
+                    finished_callback()
+
         output_template = Path(save_path) / "%(title)s.%(ext)s"
         ydl_opts = {
             "format": format_id.split(" - ")[0],
             "outtmpl": str(output_template),
+            "progress_hooks": [_hook],
         }
         ffmpeg_dir = Downloader._get_ffmpeg_dir()
         if ffmpeg_dir and not shutil.which("ffmpeg"):
