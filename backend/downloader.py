@@ -1,12 +1,24 @@
 """Video search and download utilities."""
 
 from pathlib import Path
+import shutil
 
 import yt_dlp
 
 
 class Downloader:
     """Utility class for searching and downloading YouTube videos."""
+
+    @staticmethod
+    def _get_ffmpeg_dir() -> Path | None:
+        """Return path to the bundled FFmpeg directory if available."""
+        ffmpeg_dir = (
+            Path(__file__).resolve().parent.parent
+            / "thirdParty"
+            / "ffmpeg"
+            / "bin"
+        )
+        return ffmpeg_dir if ffmpeg_dir.exists() else None
 
     @staticmethod
     def search_video(url: str) -> dict:
@@ -16,6 +28,9 @@ class Downloader:
             "simulate": True,
             "force_generic_extractor": True,
         }
+        ffmpeg_dir = Downloader._get_ffmpeg_dir()
+        if ffmpeg_dir and not shutil.which("ffmpeg"):
+            ydl_opts["ffmpeg_location"] = str(ffmpeg_dir)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             return ydl.extract_info(url, download=False)
 
@@ -27,5 +42,8 @@ class Downloader:
             "format": format_id.split(" - ")[0],
             "outtmpl": str(output_template),
         }
+        ffmpeg_dir = Downloader._get_ffmpeg_dir()
+        if ffmpeg_dir and not shutil.which("ffmpeg"):
+            ydl_opts["ffmpeg_location"] = str(ffmpeg_dir)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([info["webpage_url"]])
