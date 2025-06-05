@@ -55,10 +55,37 @@ class App(ctk.CTk):
     def display_streams(self, info: dict) -> None:
         """Show available streams in a scrollable frame."""
         formats = info.get("formats", [])
+
+        video_formats = [f for f in formats if f.get("vcodec") != "none"]
+        audio_formats = [
+            f
+            for f in formats
+            if f.get("acodec") != "none" and f.get("vcodec") == "none"
+        ]
+
+        best_audio = max(
+            audio_formats,
+            key=lambda f: f.get("abr") or f.get("tbr") or 0,
+            default=None,
+        )
+        audio_id = best_audio.get("format_id") if best_audio else "bestaudio"
+
+        best_by_height: dict[int, dict] = {}
+        for fmt in video_formats:
+            height = fmt.get("height")
+            if not height:
+                continue
+            current = best_by_height.get(height)
+            if (
+                not current
+                or (fmt.get("tbr") or 0) > (current.get("tbr") or 0)
+            ):
+                best_by_height[height] = fmt
+
         format_values = [
-            f"{fmt.get('format_id')} - {fmt.get('ext')}"
-            f" - {fmt.get('resolution', 'audio only')}"
-            for fmt in formats
+            f"{fmt['format_id']}+{audio_id} - {fmt.get('ext')}"
+            f" - {fmt.get('resolution')}"
+            for height, fmt in sorted(best_by_height.items())
         ]
 
         stream_frame = MyScrollableRadioButtonFrame(

@@ -6,6 +6,8 @@ This project is a simple YouTube video downloader built with Python. It allows u
 
 - Download videos from YouTube
 - Choose video resolution
+- Streams list shows one high-quality option per resolution
+- Video is merged with the best available audio using FFmpeg
 - Simple and easy to use
 
 ## Requirements
