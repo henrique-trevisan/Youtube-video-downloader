@@ -10,6 +10,9 @@ class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, title, values, variable) -> None:
         super().__init__(master, label_text=title)
         self.grid_columnconfigure(0, weight=1)
+        # values can be provided either as plain strings or as tuples of
+        # (display_text, value).  Store them as given so that the radio
+        # buttons can use a value different from the displayed text.
         self.values = list(values)
         self.radiobuttons = []
         self.variable = variable
@@ -17,17 +20,22 @@ class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
         # Initial radio buttons
         self.create_radio_buttons(self.values)
 
-    def create_radio_buttons(self, values: list[str]) -> None:
+    def create_radio_buttons(self, values) -> None:
         """Create radiobutton widgets for the given value list."""
         for rb in self.radiobuttons:
             rb.destroy()
         self.radiobuttons = []
-        for i, value in enumerate(values):
+        for i, item in enumerate(values):
+            # allow tuples (display_text, value) or plain strings
+            if isinstance(item, tuple):
+                text, val = item
+            else:
+                text = val = item
             radiobutton = ctk.CTkRadioButton(
                 self,
-                text=value,
+                text=text,
                 variable=self.variable,
-                value=value,
+                value=val,
             )
             radiobutton.grid(
                 row=i,

@@ -36,6 +36,17 @@ class App(ctk.CTk):
         self.message_label = None
         MyYouTubeDownloaderApp(self)
 
+        # progress bar for downloads, hidden by default
+        self.progress_bar = ctk.CTkProgressBar(self)
+        self.progress_bar.grid(
+            row=6,
+            column=0,
+            padx=10,
+            pady=(0, 10),
+            sticky="ew",
+        )
+        self.progress_bar.grid_remove()
+
     def search_video(self) -> None:
         """Retrieve video information and display available streams."""
         self.show_message("Searching for video...")
@@ -83,8 +94,10 @@ class App(ctk.CTk):
                 best_by_height[height] = fmt
 
         format_values = [
-            f"{fmt['format_id']}+{audio_id} - {fmt.get('ext')}"
-            f" - {fmt.get('resolution')}"
+            (
+                f"{fmt.get('resolution')} - {info.get('title', '')}",
+                f"{fmt['format_id']}+{audio_id}",
+            )
             for height, fmt in sorted(best_by_height.items())
         ]
 
@@ -134,9 +147,21 @@ class App(ctk.CTk):
             return
 
         info = Downloader.search_video(self.URL_Entry.get())
+        self.download_button.configure(state="disabled")
+        self.progress_bar.set(0)
+        self.progress_bar.grid()
         self.show_message("Downloading video...", "green")
         self.task_queue.put(
-            (Downloader.download_video, (info, selected_stream, save_path))
+            (
+                Downloader.download_video,
+                (
+                    info,
+                    selected_stream,
+                    save_path,
+                    self._progress_callback,
+                    self._download_finished_callback,
+                ),
+            )
         )
 
     def show_message(self, message: str, color: str = "white") -> None:
@@ -151,6 +176,20 @@ class App(ctk.CTk):
             pady=10,
             sticky="nsew",
         )
+
+    def _progress_callback(self, progress: float) -> None:
+        """Thread-safe update of the progress bar."""
+        self.after(0, lambda p=progress: self.progress_bar.set(p))
+
+    def _download_finished_callback(self) -> None:
+        """Schedule UI updates when a download completes."""
+        self.after(0, self._on_download_finished)
+
+    def _on_download_finished(self) -> None:
+        """Re-enable UI elements and show completion message."""
+        self.download_button.configure(state="normal")
+        self.progress_bar.grid_remove()
+        self.show_message("Download finished!", "green")
 
     def on_closing(self) -> None:
         """Handle the window close event."""
