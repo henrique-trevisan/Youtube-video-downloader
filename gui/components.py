@@ -13,7 +13,7 @@ class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
         self.values = list(values)
         self.radiobuttons = []
         self.variable = variable
-        
+
         # Initial radio buttons
         self.create_radio_buttons(self.values)
 
@@ -51,7 +51,11 @@ class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
 
         fmt_filter = self.format_filter.get()
         if fmt_filter:
-            values = [v for v in values if f"- {fmt_filter.lower()}" in v.lower()]
+            values = [
+                v
+                for v in values
+                if f"- {fmt_filter.lower()}" in v.lower()
+            ]
 
         vq_filter = self.video_quality_filter.get()
         if vq_filter:

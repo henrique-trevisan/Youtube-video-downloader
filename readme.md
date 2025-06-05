@@ -11,7 +11,7 @@ This project is a simple YouTube video downloader built with Python. It allows u
 ## Requirements
 
 - Python 3.x
-- `pytube` library
+- `yt-dlp` library
 
 ## Installation
 
@@ -27,6 +27,9 @@ This project is a simple YouTube video downloader built with Python. It allows u
     ```bash
     pip install -r requirements.txt
     ```
+
+On Windows, FFmpeg is bundled with this repository under `thirdParty/ffmpeg/bin`.
+The application automatically uses it if no system FFmpeg is found.
 
 ## Usage
 
