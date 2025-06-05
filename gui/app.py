@@ -10,10 +10,10 @@ class App(ctk.CTk):
         self.geometry("700x610")
         self.resizable(True, True)
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.GUI_oppened = True
+        self.gui_opened = True
 
         self.task_queue = queue.Queue()
-        self.worker = Worker(self.task_queue, self.GUI_oppened)
+        self.worker = Worker(self.task_queue, self.gui_opened)
 
         self.selected_format = ctk.StringVar()
         self.selected_format.set(True)
@@ -78,6 +78,6 @@ class App(ctk.CTk):
         self.message_label.grid(row=4, column=0, padx=20, pady=10, sticky="nsew")
 
     def on_closing(self):
-        self.GUI_oppened = False
-        self.worker.stop_workers(self.GUI_oppened)  # Ensure worker threads exit
+        self.gui_opened = False
+        self.worker.stop_workers(self.gui_opened)  # Ensure worker threads exit
         self.destroy()
