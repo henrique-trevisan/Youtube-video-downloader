@@ -10,7 +10,8 @@ class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
     def __init__(self, master, title, values, variable) -> None:
         super().__init__(master, label_text=title)
         self.grid_columnconfigure([0, 1, 2, 3, 4], weight=1)
-        self.values = values
+        self.all_values = list(values)
+        self.filtered_values = list(values)
         self.radiobuttons = []
         self.variable = variable
 
@@ -18,6 +19,7 @@ class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
         self.audio_video_filter = ctk.CTkComboBox(
             self,
             values=["Audio", "Video"],
+            command=self.apply_filters,
         )
         self.audio_video_filter.grid(
             row=0,
@@ -30,6 +32,7 @@ class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
         self.format_filter = ctk.CTkComboBox(
             self,
             values=["MP4", "MP3", "WEBM", "MKV"],
+            command=self.apply_filters,
         )
         self.format_filter.grid(
             row=0,
@@ -42,6 +45,7 @@ class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
         self.audio_quality_filter = ctk.CTkComboBox(
             self,
             values=["High", "Medium", "Low"],
+            command=self.apply_filters,
         )
         self.audio_quality_filter.grid(
             row=0,
@@ -54,6 +58,7 @@ class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
         self.video_quality_filter = ctk.CTkComboBox(
             self,
             values=["1080p", "720p", "480p", "360p"],
+            command=self.apply_filters,
         )
         self.video_quality_filter.grid(
             row=0,
@@ -63,8 +68,15 @@ class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
             sticky="ew",
         )
 
-        # Add radio buttons
-        for i, value in enumerate(self.values):
+        # Initial radio buttons
+        self.create_radio_buttons(self.filtered_values)
+
+    def create_radio_buttons(self, values: list[str]) -> None:
+        """Create radiobutton widgets for the given value list."""
+        for rb in self.radiobuttons:
+            rb.destroy()
+        self.radiobuttons = []
+        for i, value in enumerate(values):
             radiobutton = ctk.CTkRadioButton(
                 self,
                 text=value,
@@ -80,6 +92,44 @@ class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
                 sticky="ew",
             )
             self.radiobuttons.append(radiobutton)
+
+    def apply_filters(self, *args) -> None:
+        """Filter the displayed radio buttons based on combo boxes."""
+        values = list(self.all_values)
+
+        av_filter = self.audio_video_filter.get()
+        if av_filter:
+            if av_filter == "Audio":
+                values = [v for v in values if "audio only" in v.lower()]
+            elif av_filter == "Video":
+                values = [v for v in values if "audio only" not in v.lower()]
+
+        fmt_filter = self.format_filter.get()
+        if fmt_filter:
+            values = [v for v in values if f"- {fmt_filter.lower()}" in v.lower()]
+
+        vq_filter = self.video_quality_filter.get()
+        if vq_filter:
+            values = [v for v in values if vq_filter.lower() in v.lower()]
+
+        aq_filter = self.audio_quality_filter.get()
+        if aq_filter:
+            def bitrate_category(text: str) -> str:
+                import re
+                match = re.search(r"(\d+)k", text)
+                if not match:
+                    return ""
+                bitrate = int(match.group(1))
+                if bitrate >= 192:
+                    return "High"
+                if bitrate >= 128:
+                    return "Medium"
+                return "Low"
+
+            values = [v for v in values if bitrate_category(v) == aq_filter]
+
+        self.filtered_values = values
+        self.create_radio_buttons(self.filtered_values)
 
 
 class MyYouTubeDownloaderApp(ctk.CTk):
