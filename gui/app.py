@@ -33,6 +33,9 @@ class App(ctk.CTk):
         self.checkbox_var = ctk.BooleanVar()
         self.checkbox_var.set(True)
 
+        # flag to indicate an ongoing download
+        self.downloading = False
+
         self.message_label = None
         MyYouTubeDownloaderApp(self)
 
@@ -42,7 +45,7 @@ class App(ctk.CTk):
             row=6,
             column=0,
             padx=10,
-            pady=(0, 10),
+            pady=(0, 20),
             sticky="ew",
         )
         self.progress_bar.grid_remove()
@@ -131,7 +134,7 @@ class App(ctk.CTk):
 
     def update_download_button(self, *args) -> None:
         """Enable or disable download button based on selection."""
-        if self.selected_format.get():
+        if self.selected_format.get() and not self.downloading:
             self.download_button.configure(state="normal")
         else:
             self.download_button.configure(state="disabled")
@@ -148,6 +151,7 @@ class App(ctk.CTk):
 
         info = Downloader.search_video(self.URL_Entry.get())
         self.download_button.configure(state="disabled")
+        self.downloading = True
         self.progress_bar.set(0)
         self.progress_bar.grid()
         self.show_message("Downloading video...", "green")
@@ -187,7 +191,9 @@ class App(ctk.CTk):
 
     def _on_download_finished(self) -> None:
         """Re-enable UI elements and show completion message."""
-        self.download_button.configure(state="normal")
+        self.downloading = False
+        # restore download button state based on current selection
+        self.update_download_button()
         self.progress_bar.grid_remove()
         self.show_message("Download finished!", "green")
 
