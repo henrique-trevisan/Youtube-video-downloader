@@ -19,7 +19,7 @@ class App(ctk.CTk):
     def __init__(self) -> None:
         """Configure the main window and worker threads."""
         super().__init__()
-        self.geometry("700x610")
+        self.geometry("700x630")
         self.resizable(True, True)
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.gui_opened = True
