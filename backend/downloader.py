@@ -53,6 +53,17 @@ class Downloader:
             elif d.get("status") == "finished":
                 if progress_callback:
                     progress_callback(1.0)
+                if (
+                    d.get("info_dict", {}).get("requested_formats") is None
+                    and finished_callback
+                ):
+                    finished_callback()
+
+        def _pp_hook(d):
+            if (
+                d.get("status") == "finished"
+                and "merger" in d.get("postprocessor", "").lower()
+            ):
                 if finished_callback:
                     finished_callback()
 
@@ -61,6 +72,7 @@ class Downloader:
             "format": format_id.split(" - ")[0],
             "outtmpl": str(output_template),
             "progress_hooks": [_hook],
+            "postprocessor_hooks": [_pp_hook],
         }
         ffmpeg_dir = Downloader._get_ffmpeg_dir()
         if ffmpeg_dir and not shutil.which("ffmpeg"):
