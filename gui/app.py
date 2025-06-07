@@ -77,9 +77,15 @@ class App(ctk.CTk):
             if f.get("acodec") != "none" and f.get("vcodec") == "none"
         ]
 
+        # Prefer audio tracks with the highest language_preference to avoid
+        # downloading dubbed versions.  Within the same language preference
+        # group, choose the stream with the highest bitrate.
         best_audio = max(
             audio_formats,
-            key=lambda f: f.get("abr") or f.get("tbr") or 0,
+            key=lambda f: (
+                f.get("language_preference", 0),
+                f.get("abr") or f.get("tbr") or 0,
+            ),
             default=None,
         )
         audio_id = best_audio.get("format_id") if best_audio else "bestaudio"
