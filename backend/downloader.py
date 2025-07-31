@@ -107,8 +107,9 @@ class Downloader:
             "outtmpl": str(output),
             "concurrent_fragment_downloads": os.cpu_count() or 1,
             "restrictfilenames": True,
+            "merge_output_format": "mkv",  # evita erro ao mesclar Opus
+            "verbose": True,
         }
-        ydl_opts["merge_output_format"] = "mkv"       # evita erro ao mesclar Opus
         ffmpeg_path = shutil.which("ffmpeg")
         ffmpeg_dir = Downloader._get_ffmpeg_dir()
         if not ffmpeg_path and ffmpeg_dir:
@@ -118,11 +119,13 @@ class Downloader:
             hwaccel = _hwaccel_args(ffmpeg_path)
         else:
             hwaccel = []
-        ydl_opts["postprocessor_args"] = [
-            "-threads",
-            str(os.cpu_count() or 1),
-            *hwaccel,
-        ]
+        ydl_opts["postprocessor_args"] = {
+            "Merger+ffmpeg": [
+                "-threads",
+                str(os.cpu_count() or 1),
+                *hwaccel,
+            ]
+        }
         return ydl_opts
 
 
