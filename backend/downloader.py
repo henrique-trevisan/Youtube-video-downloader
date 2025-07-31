@@ -2,8 +2,81 @@
 
 from pathlib import Path
 import shutil
+import os
+import subprocess
 
 import yt_dlp
+
+
+def _best_audio_id(formats: list[dict]) -> str:
+    """Return the format_id of the best available audio stream."""
+    audio_formats = [
+        f
+        for f in formats
+        if f.get("acodec") != "none" and f.get("vcodec") == "none"
+    ]
+    best_audio = max(
+        audio_formats,
+        key=lambda f: (
+            f.get("language_preference", 0),
+            f.get("abr") or f.get("tbr") or 0,
+        ),
+        default=None,
+    )
+    return best_audio.get("format_id") if best_audio else "bestaudio"
+
+
+def _best_video_formats(formats: list[dict]) -> list[tuple[str, str]]:
+    """Return video formats sorted by height descending."""
+    video_formats = [f for f in formats if f.get("vcodec") != "none"]
+    best_by_height: dict[int, dict] = {}
+    for fmt in video_formats:
+        height = fmt.get("height")
+        if not height:
+            continue
+        current = best_by_height.get(height)
+        if not current or (fmt.get("tbr") or 0) > (current.get("tbr") or 0):
+            best_by_height[height] = fmt
+    audio_id = _best_audio_id(formats)
+    return [
+        (
+            f"{fmt.get('resolution')}",
+            f"{fmt['format_id']}+{audio_id}",
+        )
+        for _, fmt in sorted(best_by_height.items(), reverse=True)
+    ]
+
+
+def _hwaccel_args(ffmpeg_path: str) -> list[str]:
+    """Return ffmpeg hardware acceleration args when supported."""
+    try:
+        result = subprocess.run(
+            [ffmpeg_path, "-hwaccels"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except Exception:
+        return []
+
+    available = {
+        line.strip().lower()
+        for line in result.stdout.splitlines()
+        if line.strip() and not line.lower().startswith("hardware")
+    }
+    priority = [
+        "d3d11va",
+        "dxva2",
+        "cuda",
+        "qsv",
+        "vaapi",
+        "vdpau",
+        "videotoolbox",
+    ]
+    for method in priority:
+        if method in available:
+            return ["-hwaccel", method]
+    return []
 
 
 class Downloader:
@@ -19,6 +92,42 @@ class Downloader:
             / "bin"
         )
         return ffmpeg_dir if ffmpeg_dir.exists() else None
+
+    @staticmethod
+    def available_streams(info: dict) -> list[tuple[str, str]]:
+        """Return formatted stream options for the given info."""
+        return _best_video_formats(info.get("formats", []))
+
+    @staticmethod
+    def _build_ydl_opts(format_id: str, output: Path) -> dict:
+        """Return common yt-dlp options with ffmpeg settings."""
+        format_id = format_id.split(" - ")[0]
+        ydl_opts = {
+            "format": format_id,
+            "outtmpl": str(output),
+            "concurrent_fragment_downloads": os.cpu_count() or 1,
+            "restrictfilenames": True,
+            "merge_output_format": "mkv",  # evita erro ao mesclar Opus
+            "verbose": True,
+        }
+        ffmpeg_path = shutil.which("ffmpeg")
+        ffmpeg_dir = Downloader._get_ffmpeg_dir()
+        if not ffmpeg_path and ffmpeg_dir:
+            ffmpeg_path = str(ffmpeg_dir / "ffmpeg.exe")
+            ydl_opts["ffmpeg_location"] = str(ffmpeg_dir)
+        if ffmpeg_path:
+            hwaccel = _hwaccel_args(ffmpeg_path)
+        else:
+            hwaccel = []
+        ydl_opts["postprocessor_args"] = {
+            "Merger+ffmpeg": [
+                "-threads",
+                str(os.cpu_count() or 1),
+                *hwaccel,
+            ]
+        }
+        return ydl_opts
+
 
     @staticmethod
     def search_video(url: str) -> dict:
@@ -68,14 +177,12 @@ class Downloader:
                     finished_callback()
 
         output_template = Path(save_path) / "%(title)s.%(ext)s"
-        ydl_opts = {
-            "format": format_id.split(" - ")[0],
-            "outtmpl": str(output_template),
-            "progress_hooks": [_hook],
-            "postprocessor_hooks": [_pp_hook],
-        }
-        ffmpeg_dir = Downloader._get_ffmpeg_dir()
-        if ffmpeg_dir and not shutil.which("ffmpeg"):
-            ydl_opts["ffmpeg_location"] = str(ffmpeg_dir)
+        ydl_opts = Downloader._build_ydl_opts(format_id, output_template)
+        ydl_opts.update(
+            {
+                "progress_hooks": [_hook],
+                "postprocessor_hooks": [_pp_hook],
+            }
+        )
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([info["webpage_url"]])
