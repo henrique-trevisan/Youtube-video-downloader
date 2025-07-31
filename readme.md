@@ -14,7 +14,7 @@ This project is a simple YouTube video downloader built with Python. It allows u
 ## Requirements
 
 - Python 3.x
-- `yt-dlp` library
+- `pytube` library
 
 ## Installation
 
@@ -51,3 +51,4 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 ## Contact
 
 For any questions or suggestions, please contact trehen30@gmail.com.
+
