@@ -118,11 +118,14 @@ class Downloader:
             hwaccel = _hwaccel_args(ffmpeg_path)
         else:
             hwaccel = []
-        ydl_opts["postprocessor_args"] = [
-            "-threads",
-            str(os.cpu_count() or 1),
-            *hwaccel,
-        ]
+        ydl_opts["verbose"] = True
+        ydl_opts["postprocessor_args"] = {
+            "Merger+ffmpeg": [
+                "-threads",
+                str(os.cpu_count() or 1),
+                *hwaccel,
+            ]
+        }
         return ydl_opts
 
 
