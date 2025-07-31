@@ -3,6 +3,7 @@
 from pathlib import Path
 import shutil
 import os
+import subprocess
 
 import yt_dlp
 
@@ -46,6 +47,25 @@ def _best_video_formats(formats: list[dict]) -> list[tuple[str, str]]:
     ]
 
 
+def _hwaccel_args(ffmpeg_path: str) -> list[str]:
+    """Return ffmpeg hardware acceleration args if available."""
+    try:
+        result = subprocess.run(
+            [ffmpeg_path, "-hwaccels"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except Exception:
+        return []
+    methods = [
+        line.strip()
+        for line in result.stdout.splitlines()
+        if line.strip() and not line.lower().startswith("hardware")
+    ]
+    return ["-hwaccel", methods[0]] if methods else []
+
+
 class Downloader:
     """Utility class for searching and downloading YouTube videos."""
 
@@ -68,20 +88,27 @@ class Downloader:
     @staticmethod
     def _build_ydl_opts(format_id: str, output: Path) -> dict:
         """Return common yt-dlp options with ffmpeg settings."""
+        format_id = format_id.split(" - ")[0]
         ydl_opts = {
-            "format": format_id.split(" - ")[0],
+            "format": format_id,
             "outtmpl": str(output),
             "concurrent_fragment_downloads": os.cpu_count() or 1,
-            "postprocessor_args": [
-                "-threads",
-                str(os.cpu_count() or 1),
-                "-hwaccel",
-                "auto",
-            ],
+            "restrictfilenames": True,
         }
+        ffmpeg_path = shutil.which("ffmpeg")
         ffmpeg_dir = Downloader._get_ffmpeg_dir()
-        if ffmpeg_dir and not shutil.which("ffmpeg"):
+        if not ffmpeg_path and ffmpeg_dir:
+            ffmpeg_path = str(ffmpeg_dir / "ffmpeg.exe")
             ydl_opts["ffmpeg_location"] = str(ffmpeg_dir)
+        if ffmpeg_path:
+            hwaccel = _hwaccel_args(ffmpeg_path)
+        else:
+            hwaccel = []
+        ydl_opts["postprocessor_args"] = [
+            "-threads",
+            str(os.cpu_count() or 1),
+            *hwaccel,
+        ]
         return ydl_opts
 
     @staticmethod
