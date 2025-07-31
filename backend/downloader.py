@@ -108,7 +108,7 @@ class Downloader:
             "concurrent_fragment_downloads": os.cpu_count() or 1,
             "restrictfilenames": True,
         }
-        ydl_opts["merge_output_format"] = "mkv"
+        ydl_opts["merge_output_format"] = "mkv"       # evita erro ao mesclar Opus
         ffmpeg_path = shutil.which("ffmpeg")
         ffmpeg_dir = Downloader._get_ffmpeg_dir()
         if not ffmpeg_path and ffmpeg_dir:
@@ -124,6 +124,7 @@ class Downloader:
             *hwaccel,
         ]
         return ydl_opts
+
 
     @staticmethod
     def search_video(url: str) -> dict:
