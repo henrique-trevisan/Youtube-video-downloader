@@ -19,14 +19,19 @@ This project is a simple YouTube video downloader built with Python. It allows u
 ## Installation
 
 1. Clone the repository:
+
     ```bash
     git clone https://github.com/henrique-trevisan/Youtube-video-downloader.git
     ```
+
 2. Navigate to the project directory:
+
     ```bash
     cd youtube-video-downloader
     ```
+
 3. Install the required dependencies:
+
     ```bash
     pip install -r requirements.txt
     ```
@@ -37,9 +42,11 @@ The application automatically uses it if no system FFmpeg is found.
 ## Usage
 
 1. Run the script:
+
     ```sh
     python main.py
     ```
+
 2. Enter the URL of the YouTube video you want to download.
 3. Choose the desired resolution.
 4. The video will be downloaded to the current directory.
@@ -50,4 +57,4 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 
 ## Contact
 
-For any questions or suggestions, please contact trehen30@gmail.com.
+For any questions or suggestions, please contact <trehen30@gmail.com>.
