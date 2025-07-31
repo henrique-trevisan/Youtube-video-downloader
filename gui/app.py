@@ -35,6 +35,8 @@ class App(ctk.CTk):
 
         # flag to indicate an ongoing download
         self.downloading = False
+        # stores info about the last searched video
+        self.video_info: dict | None = None
 
         self.message_label = None
         MyYouTubeDownloaderApp(self)
@@ -59,6 +61,7 @@ class App(ctk.CTk):
             return
         try:
             info = Downloader.search_video(url)
+            self.video_info = info
             self.display_streams(info)
             self.show_message("Video found. Select a stream to download.")
         except Exception:
@@ -68,46 +71,9 @@ class App(ctk.CTk):
 
     def display_streams(self, info: dict) -> None:
         """Show available streams in a scrollable frame."""
-        formats = info.get("formats", [])
-
-        video_formats = [f for f in formats if f.get("vcodec") != "none"]
-        audio_formats = [
-            f
-            for f in formats
-            if f.get("acodec") != "none" and f.get("vcodec") == "none"
-        ]
-
-        # Prefer audio tracks with the highest language_preference to avoid
-        # downloading dubbed versions.  Within the same language preference
-        # group, choose the stream with the highest bitrate.
-        best_audio = max(
-            audio_formats,
-            key=lambda f: (
-                f.get("language_preference", 0),
-                f.get("abr") or f.get("tbr") or 0,
-            ),
-            default=None,
-        )
-        audio_id = best_audio.get("format_id") if best_audio else "bestaudio"
-
-        best_by_height: dict[int, dict] = {}
-        for fmt in video_formats:
-            height = fmt.get("height")
-            if not height:
-                continue
-            current = best_by_height.get(height)
-            if (
-                not current
-                or (fmt.get("tbr") or 0) > (current.get("tbr") or 0)
-            ):
-                best_by_height[height] = fmt
-
         format_values = [
-            (
-                f"{fmt.get('resolution')} - {info.get('title', '')}",
-                f"{fmt['format_id']}+{audio_id}",
-            )
-            for height, fmt in sorted(best_by_height.items())
+            (f"{display} - {info.get('title', '')}", fmt)
+            for display, fmt in Downloader.available_streams(info)
         ]
 
         stream_frame = MyScrollableRadioButtonFrame(
@@ -127,7 +93,7 @@ class App(ctk.CTk):
         self.download_button = ctk.CTkButton(
             self,
             text="Download",
-            command=lambda: self.task_queue.put((self.download_video, ())),
+            command=self.start_download,
             state="disabled",
         )
         self.download_button.grid(
@@ -145,33 +111,31 @@ class App(ctk.CTk):
         else:
             self.download_button.configure(state="disabled")
 
-    def download_video(self) -> None:
-        """Queue a download task for the selected stream."""
+    def start_download(self) -> None:
+        """Disable the button and queue the download task."""
+        self.download_button.configure(state="disabled")
+        self.task_queue.put((self._download_task, ()))
+
+    def _download_task(self) -> None:
+        """Worker thread entry to download the selected stream."""
         selected_stream = self.selected_format.get()
         save_path = self.Save_Entry.get()
-        if not selected_stream or not save_path:
+        if not selected_stream or not save_path or not self.video_info:
             self.show_message(
                 "Please select a stream and save path before downloading."
             )
             return
-
-        info = Downloader.search_video(self.URL_Entry.get())
         self.download_button.configure(state="disabled")
         self.downloading = True
         self.progress_bar.set(0)
         self.progress_bar.grid()
         self.show_message("Downloading video...", "green")
-        self.task_queue.put(
-            (
-                Downloader.download_video,
-                (
-                    info,
-                    selected_stream,
-                    save_path,
-                    self._progress_callback,
-                    self._download_finished_callback,
-                ),
-            )
+        Downloader.download_video(
+            self.video_info,
+            selected_stream,
+            save_path,
+            self._progress_callback,
+            self._download_finished_callback,
         )
 
     def show_message(self, message: str, color: str = "white") -> None:

@@ -2,8 +2,48 @@
 
 from pathlib import Path
 import shutil
+import os
 
 import yt_dlp
+
+
+def _best_audio_id(formats: list[dict]) -> str:
+    """Return the format_id of the best available audio stream."""
+    audio_formats = [
+        f
+        for f in formats
+        if f.get("acodec") != "none" and f.get("vcodec") == "none"
+    ]
+    best_audio = max(
+        audio_formats,
+        key=lambda f: (
+            f.get("language_preference", 0),
+            f.get("abr") or f.get("tbr") or 0,
+        ),
+        default=None,
+    )
+    return best_audio.get("format_id") if best_audio else "bestaudio"
+
+
+def _best_video_formats(formats: list[dict]) -> list[tuple[str, str]]:
+    """Return video formats sorted by height descending."""
+    video_formats = [f for f in formats if f.get("vcodec") != "none"]
+    best_by_height: dict[int, dict] = {}
+    for fmt in video_formats:
+        height = fmt.get("height")
+        if not height:
+            continue
+        current = best_by_height.get(height)
+        if not current or (fmt.get("tbr") or 0) > (current.get("tbr") or 0):
+            best_by_height[height] = fmt
+    audio_id = _best_audio_id(formats)
+    return [
+        (
+            f"{fmt.get('resolution')}",
+            f"{fmt['format_id']}+{audio_id}",
+        )
+        for _, fmt in sorted(best_by_height.items(), reverse=True)
+    ]
 
 
 class Downloader:
@@ -19,6 +59,30 @@ class Downloader:
             / "bin"
         )
         return ffmpeg_dir if ffmpeg_dir.exists() else None
+
+    @staticmethod
+    def available_streams(info: dict) -> list[tuple[str, str]]:
+        """Return formatted stream options for the given info."""
+        return _best_video_formats(info.get("formats", []))
+
+    @staticmethod
+    def _build_ydl_opts(format_id: str, output: Path) -> dict:
+        """Return common yt-dlp options with ffmpeg settings."""
+        ydl_opts = {
+            "format": format_id.split(" - ")[0],
+            "outtmpl": str(output),
+            "concurrent_fragment_downloads": os.cpu_count() or 1,
+            "postprocessor_args": [
+                "-threads",
+                str(os.cpu_count() or 1),
+                "-hwaccel",
+                "auto",
+            ],
+        }
+        ffmpeg_dir = Downloader._get_ffmpeg_dir()
+        if ffmpeg_dir and not shutil.which("ffmpeg"):
+            ydl_opts["ffmpeg_location"] = str(ffmpeg_dir)
+        return ydl_opts
 
     @staticmethod
     def search_video(url: str) -> dict:
@@ -68,14 +132,12 @@ class Downloader:
                     finished_callback()
 
         output_template = Path(save_path) / "%(title)s.%(ext)s"
-        ydl_opts = {
-            "format": format_id.split(" - ")[0],
-            "outtmpl": str(output_template),
-            "progress_hooks": [_hook],
-            "postprocessor_hooks": [_pp_hook],
-        }
-        ffmpeg_dir = Downloader._get_ffmpeg_dir()
-        if ffmpeg_dir and not shutil.which("ffmpeg"):
-            ydl_opts["ffmpeg_location"] = str(ffmpeg_dir)
+        ydl_opts = Downloader._build_ydl_opts(format_id, output_template)
+        ydl_opts.update(
+            {
+                "progress_hooks": [_hook],
+                "postprocessor_hooks": [_pp_hook],
+            }
+        )
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([info["webpage_url"]])
