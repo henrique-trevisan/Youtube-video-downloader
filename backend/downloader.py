@@ -6,6 +6,7 @@ import os
 import subprocess
 
 import yt_dlp
+from yt_dlp.utils import sanitize_path
 
 
 def _best_audio_id(formats: list[dict]) -> str:
@@ -102,13 +103,15 @@ class Downloader:
     def _build_ydl_opts(format_id: str, output: Path) -> dict:
         """Return common yt-dlp options with ffmpeg settings."""
         format_id = format_id.split(" - ")[0]
+        output_dir = sanitize_path(str(output.parent))
         ydl_opts = {
             "format": format_id,
-            "outtmpl": str(output),
+            "paths": {"home": output_dir},
+            "outtmpl": output.name,
             "concurrent_fragment_downloads": os.cpu_count() or 1,
             "restrictfilenames": True,
         }
-        ydl_opts["merge_output_format"] = "mkv"       # evita erro ao mesclar Opus
+        ydl_opts["merge_output_format"] = "mkv"  # evita erro ao mesclar Opus
         ffmpeg_path = shutil.which("ffmpeg")
         ffmpeg_dir = Downloader._get_ffmpeg_dir()
         if not ffmpeg_path and ffmpeg_dir:
