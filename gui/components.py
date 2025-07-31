@@ -26,3 +26,4 @@ class MyScrollableRadioButtonFrame(ctk.CTkScrollableFrame):
             radiobutton = ctk.CTkRadioButton(self, text=value, variable=self.variable, value=value)
             radiobutton.grid(row=i + 1, column=0, columnspan=4, padx=10, pady=(10, 0), sticky="ew")
             self.radiobuttons.append(radiobutton)
+

@@ -5,3 +5,4 @@ def change_save_path(entry_widget):
     if folder_selected:
         entry_widget.delete(0, "end")
         entry_widget.insert(0, folder_selected)
+

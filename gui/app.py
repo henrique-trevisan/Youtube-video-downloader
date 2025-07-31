@@ -25,6 +25,8 @@ class App(ctk.CTk):
         self.selected_format.trace_add("write", self.update_download_button)
 
         self.message_label = None  # Placeholder for messages
+        self.current_yt = None
+        self.stream_map = {}
         self.init_gui()
 
     def init_gui(self) -> None:
@@ -84,18 +86,23 @@ class App(ctk.CTk):
             self.show_message("Invalid URL. Please try again.", "red")
             return
         try:
-            info = Downloader.search_video(url)
-            self.display_streams(info)
+            yt = Downloader.search_video(url)
+            self.current_yt = yt
+            self.display_streams(yt)
             self.show_message("Video found. Select a stream to download.")
         except Exception as e:
             self.show_message("Video not found. Please check the URL and try again.")
 
-    def display_streams(self, info):
-        formats = info.get("formats", [])
-        format_values = [
-            f"{fmt.get('format_id')} - {fmt.get('ext')} - {fmt.get('resolution', 'audio only')}" 
-            for fmt in formats
-        ]
+    def display_streams(self, yt):
+        streams = list(yt.streams.filter(progressive=True).order_by("resolution").desc())
+        streams += list(yt.streams.filter(video_only=True).order_by("resolution").desc())
+        streams += list(yt.streams.filter(only_audio=True))
+        self.stream_map = {}
+        format_values = []
+        for stream in streams:
+            label = f"{stream.itag} - {stream.subtype} - {stream.resolution or 'audio only'}"
+            format_values.append(label)
+            self.stream_map[label] = stream
 
         stream_frame = MyScrollableRadioButtonFrame(
             self, title="Available Streams", values=format_values, variable=self.selected_format
@@ -119,10 +126,10 @@ class App(ctk.CTk):
         if not selected_stream or not save_path:
             self.show_message("Please select a stream and save path before downloading.")
             return
-        
-        info = Downloader.search_video(self.URL_Entry.get())
+
+        yt = self.current_yt or Downloader.search_video(self.URL_Entry.get())
         self.show_message("Downloading video...", "green")
-        self.task_queue.put((Downloader.download_video, (info, selected_stream, save_path)))
+        self.task_queue.put((Downloader.download_video, (yt, selected_stream, save_path)))
 
     def show_message(self, message, color = "white"):
         if self.message_label:
@@ -134,3 +141,4 @@ class App(ctk.CTk):
         self.GUI_oppened = False
         self.worker.stop_workers(self.GUI_oppened)  # Ensure worker threads exit
         self.destroy()
+

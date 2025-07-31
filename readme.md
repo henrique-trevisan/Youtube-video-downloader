@@ -11,7 +11,8 @@ This project is a Python-based application that allows users to download videos 
 ## Requirements
 
 - Python 3.x
-- 'yt_dlp' library
+ - 'pytube' library
+ - 'moviepy' library
 
 ## Installation
 
@@ -47,3 +48,5 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## Contact
 
 For any questions or suggestions, please contact [your email].
+
+
