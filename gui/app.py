@@ -129,13 +129,14 @@ class App(ctk.CTk):
         self.downloading = True
         self.progress_bar.set(0)
         self.progress_bar.grid()
-        self.show_message("Downloading video...", "green")
+        self.show_message("Starting download...", "green")
         Downloader.download_video(
             self.video_info,
             selected_stream,
             save_path,
             self._progress_callback,
             self._download_finished_callback,
+            self._stage_callback,
         )
 
     def show_message(self, message: str, color: str = "white") -> None:
@@ -154,6 +155,10 @@ class App(ctk.CTk):
     def _progress_callback(self, progress: float) -> None:
         """Thread-safe update of the progress bar."""
         self.after(0, lambda p=progress: self.progress_bar.set(p))
+
+    def _stage_callback(self, stage: str) -> None:
+        """Thread-safe update of the status message."""
+        self.after(0, lambda s=stage: self.show_message(s, "green"))
 
     def _download_finished_callback(self) -> None:
         """Schedule UI updates when a download completes."""
