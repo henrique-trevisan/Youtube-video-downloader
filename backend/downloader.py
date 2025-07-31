@@ -153,8 +153,8 @@ class Downloader:
         stage_callback=None,
     ) -> None:
         """Download the selected format to the given path."""
-
         current_stage = [None]
+        will_merge = info.get("requested_formats") is not None
 
         def _hook(d):
             if d.get("status") == "downloading":
@@ -167,6 +167,8 @@ class Downloader:
                 if stage_callback and stage and stage != current_stage[0]:
                     current_stage[0] = stage
                     stage_callback(stage)
+                    if progress_callback:
+                        progress_callback(0)
                 total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
                 downloaded = d.get("downloaded_bytes", 0)
                 if progress_callback and total:
@@ -174,10 +176,7 @@ class Downloader:
             elif d.get("status") == "finished":
                 if progress_callback:
                     progress_callback(1.0)
-                if (
-                    d.get("info_dict", {}).get("requested_formats") is None
-                    and finished_callback
-                ):
+                if not will_merge and finished_callback:
                     finished_callback()
 
         def _pp_hook(d):
@@ -185,7 +184,11 @@ class Downloader:
                 if d.get("status") == "started":
                     if stage_callback:
                         stage_callback("Merging...")
+                    if progress_callback:
+                        progress_callback(0)
                 elif d.get("status") == "finished":
+                    if progress_callback:
+                        progress_callback(1.0)
                     if finished_callback:
                         finished_callback()
 
