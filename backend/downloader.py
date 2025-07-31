@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 
 from pytube import YouTube
+from pytube.exceptions import RegexMatchError, VideoUnavailable
 
 
 class Downloader:
@@ -28,8 +29,10 @@ class Downloader:
         """Return basic video information using pytube."""
         try:
             yt = YouTube(url)
+        except (RegexMatchError, VideoUnavailable) as exc:
+            raise ValueError("Video unavailable or invalid") from exc
         except Exception as exc:  # network errors, invalid URLs, etc
-            raise ValueError("Unable to retrieve video information") from exc
+            raise ValueError(f"Network error: {exc}") from exc
 
         info = {
             "title": yt.title,
@@ -63,8 +66,10 @@ class Downloader:
 
         try:
             yt = YouTube(info["webpage_url"])
+        except (RegexMatchError, VideoUnavailable) as exc:
+            raise ValueError("Video unavailable or invalid") from exc
         except Exception as exc:
-            raise ValueError("Unable to retrieve video") from exc
+            raise ValueError(f"Network error: {exc}") from exc
 
         ids = format_id.split("+")
         video_stream = yt.streams.get_by_itag(int(ids[0]))

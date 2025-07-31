@@ -44,6 +44,9 @@ The application automatically uses it if no system FFmpeg is found.
 3. Choose the desired resolution.
 4. The video will be downloaded to the current directory.
 
+If the application reports a network error (e.g. "HTTP Error 400"), ensure that
+your environment allows outbound HTTPS connections to YouTube.
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for any changes.
