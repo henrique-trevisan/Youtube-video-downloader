@@ -48,7 +48,7 @@ def _best_video_formats(formats: list[dict]) -> list[tuple[str, str]]:
 
 
 def _hwaccel_args(ffmpeg_path: str) -> list[str]:
-    """Return ffmpeg hardware acceleration args if available."""
+    """Return ffmpeg hardware acceleration args when supported."""
     try:
         result = subprocess.run(
             [ffmpeg_path, "-hwaccels"],
@@ -58,12 +58,25 @@ def _hwaccel_args(ffmpeg_path: str) -> list[str]:
         )
     except Exception:
         return []
-    methods = [
-        line.strip()
+
+    available = {
+        line.strip().lower()
         for line in result.stdout.splitlines()
         if line.strip() and not line.lower().startswith("hardware")
+    }
+    priority = [
+        "d3d11va",
+        "dxva2",
+        "cuda",
+        "qsv",
+        "vaapi",
+        "vdpau",
+        "videotoolbox",
     ]
-    return ["-hwaccel", methods[0]] if methods else []
+    for method in priority:
+        if method in available:
+            return ["-hwaccel", method]
+    return []
 
 
 class Downloader:
