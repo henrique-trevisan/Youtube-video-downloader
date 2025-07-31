@@ -26,12 +26,17 @@ class Downloader:
     @staticmethod
     def search_video(url: str) -> dict:
         """Return basic video information using pytube."""
-        yt = YouTube(url)
+        try:
+            yt = YouTube(url)
+        except Exception as exc:  # network errors, invalid URLs, etc
+            raise ValueError("Unable to retrieve video information") from exc
+
         info = {
             "title": yt.title,
             "webpage_url": url,
             "formats": [],
         }
+
         for stream in yt.streams.filter(adaptive=True):
             fmt = {
                 "format_id": str(stream.itag),
@@ -56,7 +61,10 @@ class Downloader:
     ) -> None:
         """Download the selected format to the given path using pytube."""
 
-        yt = YouTube(info["webpage_url"])
+        try:
+            yt = YouTube(info["webpage_url"])
+        except Exception as exc:
+            raise ValueError("Unable to retrieve video") from exc
 
         ids = format_id.split("+")
         video_stream = yt.streams.get_by_itag(int(ids[0]))

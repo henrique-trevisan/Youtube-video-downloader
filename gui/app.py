@@ -61,9 +61,10 @@ class App(ctk.CTk):
             info = Downloader.search_video(url)
             self.display_streams(info)
             self.show_message("Video found. Select a stream to download.")
-        except Exception:
+        except Exception as exc:
             self.show_message(
-                "Video not found. Please check the URL and try again."
+                f"Error: {exc}. Please check the URL or your connection.",
+                "red",
             )
 
     def display_streams(self, info: dict) -> None:
